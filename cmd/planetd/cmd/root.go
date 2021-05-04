@@ -6,7 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	"github.com/cosmos/cosmos-sdk/snapshots"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/test/planet/app/params"
 
 	"github.com/spf13/cast"
@@ -34,6 +37,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/test/planet/app"
+
 	// this line is used by starport scaffolding # stargate/root/import
 	"github.com/CosmWasm/wasmd/x/wasm"
 )
@@ -196,6 +200,11 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		panic(err)
 	}
 
+	var wasmOpts []wasm.Option
+	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
+		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
+	}
+
 	return app.New(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
@@ -204,6 +213,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		// this line is used by starport scaffolding # stargate/root/appArgument
 		app.GetEnabledProposals(),
 		appOpts,
+		wasmOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
@@ -230,6 +240,11 @@ func (a appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home not set")
 	}
 
+	var wasmOpts []wasm.Option
+	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
+		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
+	}
+
 	if height != -1 {
 		anApp = app.New(
 			logger,
@@ -243,6 +258,7 @@ func (a appCreator) appExport(
 			// this line is used by starport scaffolding # stargate/root/exportArgument
 			app.GetEnabledProposals(),
 			appOpts,
+			wasmOpts,
 		)
 
 		if err := anApp.LoadHeight(height); err != nil {
@@ -261,6 +277,7 @@ func (a appCreator) appExport(
 			// this line is used by starport scaffolding # stargate/root/noHeightExportArgument
 			app.GetEnabledProposals(),
 			appOpts,
+			wasmOpts,
 		)
 	}
 

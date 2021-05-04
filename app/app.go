@@ -246,7 +246,7 @@ func New(
 	homePath string, invCheckPeriod uint, encodingConfig appparams.EncodingConfig,
 	// this line is used by starport scaffolding # stargate/app/newArgument
 	enabledProposals []wasm.ProposalType,
-	appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
+	appOpts servertypes.AppOptions, wasmOpts []wasm.Option, baseAppOptions ...func(*baseapp.BaseApp),
 ) *App {
 
 	appCodec := encodingConfig.Marshaler
@@ -389,7 +389,7 @@ func New(
 		wasmDir,
 		wasmConfig,
 		supportedFeatures,
-		nil,
+		wasmOpts...,
 	)
 
 	// The gov proposal types can be individually enabled
